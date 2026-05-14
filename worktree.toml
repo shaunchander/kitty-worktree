@@ -1,0 +1,54 @@
+# kitty-worktree: Centralized session config
+#
+# Install: cp worktree.toml ~/.config/kitty/worktree.toml
+#
+# Sessions are matched top-to-bottom against the worktree path.
+# First match wins. If nothing matches, [default] is used.
+#
+# Template variables: {branch}, {repo}, {path}, {basename}
+
+[[sessions]]
+match = "candid-api"
+tab_title = "Backend ({basename})"
+
+[[sessions.panes]]
+title = "editor"
+command = "nvim"
+
+[[sessions.panes]]
+title = "tests"
+location = "hsplit"
+
+[[sessions.panes]]
+title = "server"
+location = "vsplit"
+
+
+[[sessions]]
+match = "candid-ui"
+tab_title = "Frontend ({basename})"
+
+[[sessions.panes]]
+title = "editor"
+command = "nvim"
+
+[[sessions.panes]]
+title = "dev server"
+location = "hsplit"
+
+[[sessions.panes]]
+title = "console"
+location = "vsplit"
+
+
+# Fallback for any repo without a specific session config
+[default]
+tab_title = "{repo} ({basename})"
+
+[[default.panes]]
+title = "editor"
+command = "nvim"
+
+[[default.panes]]
+title = "shell"
+location = "hsplit"

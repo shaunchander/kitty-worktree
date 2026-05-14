@@ -1,0 +1,20 @@
+# kitty-worktree: Per-repo session config
+#
+# Place this file as .kitty-worktree.toml in your repo root.
+# It takes priority over the centralized ~/.config/kitty/worktree.toml.
+#
+# Template variables: {branch}, {repo}, {path}, {basename}
+
+tab_title = "Backend ({branch})"
+
+[[panes]]
+title = "editor"
+command = "nvim"
+
+[[panes]]
+title = "tests"
+location = "hsplit"
+
+[[panes]]
+title = "server"
+location = "vsplit"
