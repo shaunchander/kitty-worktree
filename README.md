@@ -59,7 +59,7 @@ Use `~/.config/kitty/worktree.toml` to define sessions matched by repo path:
 
 ```toml
 [[sessions]]
-match = "candid-api"
+match = "api"
 tab_title = "Backend ({basename})"
 
 [[sessions.panes]]
