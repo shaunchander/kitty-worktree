@@ -82,7 +82,8 @@ DEFAULT_SESSION = {
     'tab_title': '{repo} ({basename})',
     'panes': [
         {'title': 'editor', 'command': 'nvim'},
-        {'title': 'shell', 'location': 'hsplit'},
+        {'title': 'claude', 'location': 'vsplit'},
+        {'title': 'terminal', 'location': 'hsplit'},
     ],
 }
 
@@ -166,13 +167,14 @@ def run_picker(worktrees):
 
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
-    max_branch = max(len(w.get('branch', '???')) for w in worktrees)
-    home = str(Path.home())
+
+    # Calculate max widths for alignment
+    max_name = max(len(Path(w['path']).name) for w in worktrees)
 
     def fmt(w):
-        branch = w.get('branch', '???').ljust(max_branch)
-        path = w['path'].replace(home, '~')
-        return f'{branch}  {path}'
+        name = Path(w['path']).name.ljust(max_name)
+        branch = w.get('branch', '???')
+        return f'{name}  →  {branch}'
 
     entries = [(w, fmt(w)) for w in worktrees]
     selected = 0
@@ -190,14 +192,24 @@ def run_picker(worktrees):
             )
             selected = max(0, min(selected, len(filtered) - 1))
 
+            # Calculate centering
+            lines = [f'Worktree: {query}', '']
+            lines.extend(d for _, d in filtered)
+            lines.append('')
+            lines.append('up/down navigate  enter select  esc cancel')
+
+            max_line = max(len(line) for line in lines)
+            term_width = os.get_terminal_size().columns
+            left_margin = max(0, (term_width - max_line) // 2)
+
             out = ['\033[2J\033[H']
-            out.append(f'  Worktree: {query}\r\n\r\n')
+            out.append(f'{" " * left_margin}Worktree: {query}\r\n\r\n')
             for i, (_, d) in enumerate(filtered):
                 if i == selected:
-                    out.append(f'  \033[7m {d} \033[0m\r\n')
+                    out.append(f'{" " * left_margin}\033[7m {d} \033[0m\r\n')
                 else:
-                    out.append(f'   {d}\r\n')
-            out.append(f'\r\n\033[2m  up/down navigate  enter select  esc cancel\033[0m')
+                    out.append(f'{" " * left_margin} {d}\r\n')
+            out.append(f'\r\n{" " * left_margin}\033[2mup/down navigate  enter select  esc cancel\033[0m')
             sys.stdout.write(''.join(out))
             sys.stdout.flush()
 
@@ -273,20 +285,22 @@ def handle_result(args, answer, target_window_id, boss):
     }
 
     tab_title = expand_vars(config.get('tab_title', '{repo} ({branch})'), variables)
-    w = boss.window_id_map.get(target_window_id)
-    if not w:
-        return
 
     # Focus existing tab if already open
-    escaped = re.escape(tab_title)
     try:
-        boss.call_remote_control(w, ('focus-tab', '--match', f'title:^{escaped}$'))
-        return
+        tabs_data = json.loads(boss.call_remote_control(None, ('ls',)))
+        for os_win in tabs_data:
+            for tab in os_win.get('tabs', []):
+                if tab.get('title') == tab_title:
+                    boss.call_remote_control(None, ('focus-tab', '--match', f'title:^{re.escape(tab_title)}$'))
+                    return
     except Exception:
         pass
 
     # Create tab with panes from config
     panes = config.get('panes', DEFAULT_SESSION['panes'])
+    tab_window = None
+
     for i, pane in enumerate(panes):
         title = expand_vars(pane.get('title', ''), variables)
         command = pane.get('command')
@@ -294,13 +308,17 @@ def handle_result(args, answer, target_window_id, boss):
 
         cmd = ['launch', '--cwd', cwd]
         if i == 0:
-            cmd += ['--type=tab', '--tab-title', tab_title]
+            cmd += ['--type', 'tab', '--tab-title', tab_title]
         else:
             location = pane.get('location', 'hsplit')
-            cmd.append(f'--location={location}')
+            cmd += ['--location', location]
         if title:
             cmd += ['--title', title]
         if command:
             cmd += shlex.split(expand_vars(command, variables))
 
-        boss.call_remote_control(w, tuple(cmd))
+        window_id = boss.call_remote_control(tab_window, tuple(cmd))
+        if i == 0 and window_id is not None:
+            tab_window = boss.window_id_map.get(window_id)
+            layout = config.get('layout', 'splits')
+            boss.call_remote_control(tab_window, ('goto-layout', layout))

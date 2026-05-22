@@ -16,12 +16,12 @@ title = "editor"
 command = "nvim"
 
 [[sessions.panes]]
-title = "tests"
-location = "hsplit"
+title = "claude"
+location = "vsplit"
 
 [[sessions.panes]]
-title = "server"
-location = "vsplit"
+title = "terminal"
+location = "hsplit"
 
 
 [[sessions]]
@@ -33,12 +33,12 @@ title = "editor"
 command = "nvim"
 
 [[sessions.panes]]
-title = "dev server"
-location = "hsplit"
+title = "claude"
+location = "vsplit"
 
 [[sessions.panes]]
-title = "console"
-location = "vsplit"
+title = "terminal"
+location = "hsplit"
 
 
 # Fallback for any repo without a specific session config
@@ -50,5 +50,9 @@ title = "editor"
 command = "nvim"
 
 [[default.panes]]
-title = "shell"
+title = "claude"
+location = "vsplit"
+
+[[default.panes]]
+title = "terminal"
 location = "hsplit"
