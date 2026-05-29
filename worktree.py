@@ -511,6 +511,9 @@ def handle_result(args, answer, target_window_id, boss):
         'repo': repo_name,
         'path': wt_path,
         'basename': Path(wt_path).name,
+        # Support session_picker.py variable names for compatibility
+        'FOLDER_NAME': Path(wt_path).name,
+        'PROJECT_DIR': wt_path,
     }
 
     tab_title = expand_vars(config.get('tab_title', '{repo} ({branch})'), variables)
