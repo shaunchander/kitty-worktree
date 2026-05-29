@@ -5,6 +5,10 @@
 #
 # Template variables: {branch}, {repo}, {path}, {basename}
 
+# Option 1: Reference a kitty session .conf file (recommended for shell initialization)
+# session_file = "~/.config/kitty/sessions/myproject.conf"
+
+# Option 2: Define panes inline
 tab_title = "Backend ({branch})"
 
 [[panes]]

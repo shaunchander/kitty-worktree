@@ -35,7 +35,18 @@ kitty-worktree looks for config in this order:
 
 ### Per-repo config
 
-Drop a `.kitty-worktree.toml` in your repo root:
+Drop a `.kitty-worktree.toml` in your repo root.
+
+**Option 1: Reference a session file (recommended for shell initialization)**
+
+```toml
+# Points to a kitty session .conf file
+session_file = "~/.config/kitty/sessions/myproject.conf"
+```
+
+This is the single source of truth approach - define your session layout once in a `.conf` file with proper shell initialization (`zsh -i -c "nvim; exec zsh"`), then reference it from multiple places. Perfect when you need `.zshrc` loaded, virtual environments activated, or other shell setup.
+
+**Option 2: Define panes inline**
 
 ```toml
 tab_title = "Backend ({branch})"
@@ -55,7 +66,25 @@ location = "vsplit"
 
 ### Centralized config
 
-Use `~/.config/kitty/worktree.toml` to define sessions matched by repo path:
+Use `~/.config/kitty/worktree.toml` to define sessions matched by repo path.
+
+**With session file references (recommended):**
+
+```toml
+[[sessions]]
+match = "api"
+session_file = "~/.config/kitty/sessions/backend.conf"
+
+[[sessions]]
+match = "ui"
+session_file = "~/.config/kitty/sessions/frontend.conf"
+
+# Fallback for unmatched repos
+[default]
+session_file = "~/.config/kitty/sessions/default.conf"
+```
+
+**Or inline pane definitions:**
 
 ```toml
 [[sessions]]

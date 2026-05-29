@@ -98,7 +98,71 @@ def load_toml(path):
         return None
 
 
+def parse_session_file(session_file_path):
+    """
+    Parse a kitty session .conf file and convert to internal panes format.
+
+    Returns dict with 'tab_title' and 'panes' keys, or None if parsing fails.
+    """
+    try:
+        path = Path(os.path.expanduser(session_file_path))
+        if not path.exists():
+            return None
+
+        with open(path) as f:
+            lines = f.readlines()
+
+        tab_title = None
+        panes = []
+        current_cwd = None
+
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+
+            if line.startswith('new_tab '):
+                tab_title = line[8:].strip()
+            elif line.startswith('cd '):
+                current_cwd = os.path.expanduser(line[3:].strip())
+            elif line.startswith('launch'):
+                # Parse launch command
+                args = line[6:].strip()
+
+                # Extract location if present
+                location = None
+                if '--location=vsplit' in args:
+                    location = 'vsplit'
+                    args = args.replace('--location=vsplit', '').strip()
+                elif '--location=hsplit' in args:
+                    location = 'hsplit'
+                    args = args.replace('--location=hsplit', '').strip()
+
+                # The remaining args are the command
+                pane = {}
+                if location:
+                    pane['location'] = location
+                if current_cwd:
+                    pane['cwd'] = current_cwd
+                if args:
+                    pane['command'] = args
+
+                panes.append(pane)
+
+        result = {}
+        if tab_title:
+            result['tab_title'] = tab_title
+        if panes:
+            result['panes'] = panes
+
+        return result if result else None
+
+    except Exception:
+        return None
+
+
 def resolve_config(worktree_path, repo_root):
+    # Check for local .kitty-worktree.toml first
     for base in [worktree_path, repo_root]:
         if not base:
             continue
@@ -106,17 +170,36 @@ def resolve_config(worktree_path, repo_root):
         if cfg.exists():
             data = load_toml(cfg)
             if data:
+                # Check if it references a session_file
+                if 'session_file' in data:
+                    parsed = parse_session_file(data['session_file'])
+                    if parsed:
+                        return parsed
                 return data
 
+    # Check central config
     central = Path.home() / '.config' / 'kitty' / 'worktree.toml'
     if central.exists():
         config = load_toml(central)
         if config:
+            # Check matched sessions
             for session in config.get('sessions', []):
                 if re.search(session.get('match', ''), worktree_path):
+                    # Check if session references a session_file
+                    if 'session_file' in session:
+                        parsed = parse_session_file(session['session_file'])
+                        if parsed:
+                            return parsed
                     return session
+            # Check default config
             if 'default' in config:
-                return config['default']
+                default_config = config['default']
+                # Check if default references a session_file
+                if 'session_file' in default_config:
+                    parsed = parse_session_file(default_config['session_file'])
+                    if parsed:
+                        return parsed
+                return default_config
 
     return DEFAULT_SESSION
 
@@ -461,7 +544,10 @@ def handle_result(args, answer, target_window_id, boss):
         if title:
             cmd += ['--title', title]
         if command:
-            cmd += shlex.split(expand_vars(command, variables))
+            # Expand variables in command first
+            expanded_cmd = expand_vars(command, variables)
+            # Use shlex.split to properly handle quoted arguments
+            cmd += shlex.split(expanded_cmd)
 
         window_id = boss.call_remote_control(tab_window, tuple(cmd))
         if i == 0 and window_id is not None:

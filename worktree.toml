@@ -6,6 +6,10 @@
 # First match wins. If nothing matches, [default] is used.
 #
 # Template variables: {branch}, {repo}, {path}, {basename}
+#
+# Use session_file to reference a .conf file for proper shell initialization.
+# This is the single source of truth approach - define your session layout
+# once in a .conf file and reference it here.
 
 [[sessions]]
 match = "candid-api"
