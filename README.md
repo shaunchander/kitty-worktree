@@ -125,6 +125,8 @@ location = "hsplit"
 | `{repo}` | Repository name |
 | `{path}` | Full worktree path |
 | `{basename}` | Worktree directory name |
+| `{FOLDER_NAME}` | Alias for `{basename}` (for .conf file compatibility) |
+| `{PROJECT_DIR}` | Alias for `{path}` (for .conf file compatibility) |
 
 ### Pane options
 
